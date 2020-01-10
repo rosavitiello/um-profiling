@@ -1,0 +1,135 @@
+README
+Ethan Schreiber and Rosa Vitiello
+11/19/19
+
+--------------------------------------------------------------------------------
+                                IMPLEMENTATION
+--------------------------------------------------------------------------------
+
+    All aspects of given specifications have been implemented
+
+--------------------------------------------------------------------------------
+                              UNIVERSAL MACHINE
+--------------------------------------------------------------------------------
+
+    This is an implementation of a simple Universal Machine
+
+    -- Machine State --
+
+    The UM has these components:
+        • Eight general purpose registers holding one word each
+        • A large address space that is divided into a collection of memory 
+          segments. Each segment contains a sequence of words, and each is 
+          referred to by a distinct 32-bit identifier. The memory is segmented 
+          and word oriented; you cannot load a byte
+        • An I/O device capable of displaying ASCII characters and performing
+          input and output of unsigned 8-bit characters
+        • A 32 bit program counter
+
+        One distinguished segment is referred to by the 32 bit identifier and 
+        stores the program. This segment is called the 0 segment.
+
+        At each time step, an instruction is retrieved from the word in the 
+        segment 0 whose address is the program counter. The program
+        counter the advances to the next word, if any, and the instruction
+        is executed
+
+    -- Instructions --
+
+    This simple UM recognizes 14 RISC instructions. Each instruction is coded
+    by the four most significant bits of the instruction word. These bits are 
+    called the opcode
+
+    0    Conditional Move       if r[c] != 0, r[a] = r[b]
+
+    1    Segmented Load         loads value from segemented memory in mem[b][c] 
+                                into reg[a]
+
+    2    Segmented Store        stores value from r[c] in mem[a][b]
+
+    3    Addition               performs addition operation, 
+                                r[a] = (r[b] + r[c]) mod 2^32
+
+    4    Multiplication         performs multiplication operation, 
+                                r[a] = (r[b] x r[c]) mod 2^32
+
+    5    Division               performs r[a] = r[b]/r[c]
+
+    6    Bitwise NAND           r[a] = ~(r[b] & r[c])
+
+    7    Halt                   Computation stops
+
+    8    Map Segment            A new segment is created with a number of words
+                                equal to the value in r[c]. Each word in the
+                                segment is initalized to 0. A bit pattern that 
+                                is not all zeroes and that does not identify any 
+                                currently mapped segment is placed in r[b]. The
+                                new segment is mapped as m[r[b]]
+    
+    9    Unmap Segment          The segment in m[r[c]] is unmapped. Future
+                                mappings may reuse the identifier r[c]
+    
+    10   Output                 The value in r[c] is written to I/0. Only values
+                                from 0 - 255 are allowed
+
+    11   Input                  UM awaits input on the I/O devices. When input
+                                arrives, r[c] is loaded with the input, which
+                                must be a value from 0 - 255. If the end of the
+                                input has been signalled, then r[c] is loaded
+                                with a full 32 bit word in which every bit is 1
+    
+    12   Load Program           Segment m[r[b]] is duplicated, and the duplicate 
+                                replaces m[0], which is abandoned. The program 
+                                counter is set to point to m[0][r[c]].
+
+    13   Load Value             Loads value to a register from a 32 bit word 
+
+--------------------------------------------------------------------------------
+                                 ARCHITECTURE
+--------------------------------------------------------------------------------
+
+Memory Module: 
+
+    This is a data manipulation abstraction. This module
+    has the ability to perform operations on our segmented memory, and is
+    self-contained (does not call any of our other modules). It uses a Seq_T
+    of uint32_t arrays for memory, and a Seq_T of ints for unmapped segments.
+
+Instruction Module: 
+
+    This is a operation abstraction - it is a suite of
+    functions that all are directly mapped to a RISC instruction. It interfaces
+    with the memory module and is called by the operation module. It does not
+    directly manage any data structures, rather it uses the registers and
+    memory structures.
+
+Operation Module: 
+    
+    This is another operation abstraction - it runs the program.
+    It calls mainly the instruction module and the memory module. 
+    It uses a single uint32_t array to hold registers, and a struct with two
+    Seq_Ts to hold the memory and unmapped segment sequences.
+
+Main: 
+
+    main function, which just opens and closes the um file
+    and calls the operation module.
+
+--------------------------------------------------------------------------------
+                                   ANALYSIS
+--------------------------------------------------------------------------------
+
+Our UM takes about 1.85 seconds to run 50 million instructions.
+We timed midmark's whole operation to get the total time (3.15s),
+we added a counter to count how many instructions were run (85,070,522)
+and then used the formula:
+    (50 million / # midmark instructions) * midmark time
+to find our answer.
+We also used sandmark and got 1.86 seconds for 50 million
+
+--------------------------------------------------------------------------------
+                            HOURS SPENT COMPLETING
+--------------------------------------------------------------------------------
+
+Hours spent analyzing: 4
+Hours spent solving: 15
